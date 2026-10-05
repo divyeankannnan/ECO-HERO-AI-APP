@@ -1,0 +1,988 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Eco Hero AI Assistant</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css">
+<style>
+body{font-family:Inter,Arial,sans-serif;background:#f0fdf4;color:#123;margin:0}
+.card{background:white;border-radius:20px;box-shadow:0 8px 25px rgba(0,0,0,.08)}
+.btn{border:0;border-radius:12px;padding:10px 16px;font-weight:700;cursor:pointer;transition:.2s}
+.btn:hover{transform:translateY(-1px)}
+.green{background:#16a34a;color:#fff}.red{background:#dc2626;color:#fff}.blue{background:#2563eb;color:#fff}.yellow{background:#facc15;color:#111}.gray{background:#e5e7eb;color:#111}
+.navbtn{width:100%;text-align:left;background:transparent;border:0;padding:12px 14px;border-radius:12px;font-weight:700;cursor:pointer}
+.navbtn:hover,.navbtn.active{background:#dcfce7;color:#15803d}
+.screen{display:none}.screen.active{display:block}
+input,select,textarea{border:1px solid #d1d5db;border-radius:10px;padding:10px;width:100%;box-sizing:border-box}
+.badge{display:inline-block;padding:5px 10px;border-radius:999px;font-size:12px;font-weight:800}
+.on{background:#dcfce7;color:#15803d}.off{background:#fee2e2;color:#b91c1c}
+.progress{height:12px;background:#e5e7eb;border-radius:99px;overflow:hidden}.progress>div{height:100%;background:#22c55e}
+.room{border:2px dashed #bbf7d0;border-radius:16px;padding:16px}
+.appliance{border:1px solid #e5e7eb;border-radius:12px;padding:12px;margin-top:8px}
+.chat{max-height:430px;overflow:auto}.bubble{padding:12px 14px;border-radius:16px;margin:8px 0;max-width:85%}.ai{background:#dcfce7}.user{background:#dbeafe;margin-left:auto}
+</style>
+</head>
+<body>
+
+<!-- Browser/Safari Open Helper Bar -->
+<div id="browserSelectorBanner" class="bg-blue-600 text-white px-4 py-2 flex flex-wrap justify-between items-center text-sm sticky top-0 z-30 shadow-md">
+  <div class="flex items-center gap-2 font-bold">
+    <i class="fa-solid fa-compass"></i> Open Eco Hero AI Assistant with:
+  </div>
+  <div class="flex gap-2 mt-1 sm:mt-0">
+    <button onclick="openWithSafari()" class="bg-white text-blue-700 px-3 py-1 rounded-lg font-bold text-xs flex items-center gap-1 hover:bg-gray-100">
+      <i class="fa-brands fa-safari text-blue-600"></i> Safari
+    </button>
+    <button onclick="openWithDefaultBrowser()" class="bg-blue-800 text-white px-3 py-1 rounded-lg font-bold text-xs flex items-center gap-1 hover:bg-blue-900">
+      <i class="fa-solid fa-globe"></i> Browser
+    </button>
+  </div>
+</div>
+
+<div class="min-h-screen flex flex-col">
+<header class="bg-white border-b sticky top-[41px] sm:top-[37px] z-20">
+  <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap gap-3 items-center justify-between">
+    <div>
+      <h1 class="text-2xl font-black text-green-700">🌱 Eco Hero AI Assistant</h1>
+      <p class="text-xs text-gray-500" data-i18n="tagline">Your agentive electricity-saving assistant</p>
+    </div>
+    <div class="flex items-center gap-2">
+      <label class="text-sm font-bold" data-i18n="language">Language</label>
+      <select id="languageSelect" class="!w-auto">
+        <option value="en">English</option>
+        <option value="ms">Bahasa Malaysia</option>
+        <option value="zh">中文</option>
+        <option value="ta">தமிழ்</option>
+      </select>
+      <button class="btn yellow" onclick="demo()" data-i18n="demo">DEMO</button>
+    </div>
+  </div>
+</header>
+<div class="max-w-7xl mx-auto w-full flex flex-1">
+<aside class="w-60 bg-white p-4 hidden md:block space-y-1">
+  <button class="navbtn active" data-screen="dashboard"><i class="fa-solid fa-gauge mr-2"></i><span data-i18n="dashboard">Dashboard</span></button>
+  <button class="navbtn" data-screen="floor"><i class="fa-solid fa-house mr-2"></i><span data-i18n="floorPlan">Floor Plan</span></button>
+  <button class="navbtn" data-screen="family"><i class="fa-solid fa-users mr-2"></i><span data-i18n="family">Profile & Schedule</span></button>
+  <button class="navbtn" data-screen="dailyUsageTab"><i class="fa-solid fa-bolt mr-2"></i><span data-i18n="dailyTab">Daily Usage Key-In</span></button>
+  <button class="navbtn" data-screen="billUploadTab"><i class="fa-solid fa-file-invoice-dollar mr-2"></i><span data-i18n="billTab">Monthly Bill Upload</span></button>
+  <button class="navbtn" data-screen="chat"><i class="fa-solid fa-robot mr-2"></i><span data-i18n="aiCoach">AI Eco Coach</span></button>
+</aside>
+<main class="flex-1 p-4 md:p-7">
+<section id="dashboard" class="screen active">
+  <div class="mb-5">
+    <h2 class="text-3xl font-black" data-i18n="dashTitle">Eco Dashboard</h2>
+    <p class="text-gray-600" data-i18n="dashSub">Monitor your home and let the agentive AI guide your next energy-saving action based on your Excel reference table.</p>
+  </div>
+  <div class="grid md:grid-cols-3 gap-4 mb-5">
+    <div class="card p-5"><div class="text-sm text-gray-500" data-i18n="ecoPoints">Eco Points</div><div id="points" class="text-4xl font-black text-green-600">0</div></div>
+    <div class="card p-5"><div class="text-sm text-gray-500" data-i18n="todaySaving">Today's estimated saving</div><div><span id="saving" class="text-4xl font-black">0.00</span> kWh</div></div>
+    <div class="card p-5"><div class="text-sm text-gray-500" data-i18n="actionsDone">Hourly actions completed</div><div id="actionsDone" class="text-4xl font-black text-blue-600">0</div></div>
+  </div>
+  <div class="card p-6 mb-5 border-2 border-green-200">
+    <div class="flex flex-wrap justify-between gap-3">
+      <div>
+        <div class="badge on" data-i18n="agentive">AGENTIVE AI + EXCEL REFERENCE TABLE</div>
+        <h3 class="text-2xl font-black mt-2" data-i18n="hourlyTitle">HOURLY AI SAVING ASSISTANT</h3>
+        <p class="text-gray-600" data-i18n="hourlySub">The AI cross-references active appliances with standard and eco-saving usage benchmarks.</p>
+      </div>
+      <div class="text-right"><div class="text-sm text-gray-500" data-i18n="currentTimeLabel">Current Time</div><div id="hourText" class="font-black text-xl"></div></div>
+    </div>
+    <div class="grid lg:grid-cols-3 gap-4 mt-5">
+      <div class="bg-green-50 rounded-2xl p-5">
+        <div class="text-sm font-bold text-green-700" data-i18n="recommendation">AI Recommendation</div>
+        <div id="recommendation" class="text-xl font-black mt-2"></div>
+        <div id="reason" class="text-sm text-gray-600 mt-2"></div>
+      </div>
+      <div class="bg-blue-50 rounded-2xl p-5">
+        <div class="text-sm font-bold text-blue-700" data-i18n="potentialSaving">Potential saving</div>
+        <div id="potential" class="text-3xl font-black mt-2">0.00 kWh</div>
+        <div id="applianceInfo" class="text-sm text-gray-600 mt-2"></div>
+      </div>
+      <div class="bg-yellow-50 rounded-2xl p-5">
+        <div class="text-sm font-bold text-yellow-700" data-i18n="confirm">Did you follow the AI recommendation?</div>
+        <div class="grid grid-cols-2 gap-2 mt-3">
+          <button class="btn green" onclick="feedback(true)" data-i18n="yes">YES, I DID IT ✅</button>
+          <button class="btn red" onclick="feedback(false)" data-i18n="no">NO, NOT YET ❌</button>
+        </div>
+        <div id="feedback" class="text-sm font-bold mt-3"></div>
+      </div>
+    </div>
+    <div class="mt-5">
+      <div class="flex justify-between text-sm font-bold"><span data-i18n="dailyProgress">Daily progress</span><span id="progressText">0/5</span></div>
+      <div class="progress mt-2"><div id="progressBar" style="width:0%"></div></div>
+    </div>
+  </div>
+
+  <!-- New Dashboard Graph Section -->
+  <div class="card p-6 mb-5">
+    <div class="flex justify-between items-center mb-4 flex-wrap gap-2">
+      <div>
+        <h3 class="text-xl font-black" data-i18n="graphTitle">Daily Electricity Usage & Saving Achievement</h3>
+        <p class="text-sm text-gray-500" data-i18n="graphSub">Compare your daily electricity usage (kWh) against your daily saving achievements.</p>
+      </div>
+    </div>
+    <div style="position: relative; height:300px; width:100%;">
+      <canvas id="dashboardUsageChart"></canvas>
+    </div>
+    <div id="graphEmptyMessage" class="text-center text-gray-500 py-6 hidden" data-i18n="graphEmpty">Enter your daily electricity usage to see your graph.</div>
+  </div>
+</section>
+
+<section id="floor" class="screen">
+  <h2 class="text-3xl font-black" data-i18n="floorTitle">House Floor Plan</h2>
+  <p class="text-gray-600 mb-5" data-i18n="floorSub">Add rooms and select appliances from your comprehensive energy reference table.</p>
+  <div class="card p-5 mb-5">
+    <div class="grid md:grid-cols-2 gap-3">
+      <select id="roomNameSelect" class="mb-2">
+        <option value="Living Room">Living Room</option>
+        <option value="Bedroom 1">Bedroom 1</option>
+        <option value="Bedroom 2">Bedroom 2</option>
+        <option value="Master Bedroom">Master Bedroom</option>
+        <option value="Kitchen">Kitchen</option>
+        <option value="Dining Room">Dining Room</option>
+        <option value="Study Room">Study Room</option>
+        <option value="Bathroom">Bathroom</option>
+        <option value="Other">Other</option>
+      </select>
+      <input id="roomNameCustom" data-i18n-placeholder="roomPlaceholder" placeholder="Custom Room name (optional)">
+      <button class="btn green md:col-span-2" onclick="addRoom()" data-i18n="addRoom">+ Add Room</button>
+    </div>
+  </div>
+  <div id="rooms" class="grid md:grid-cols-2 gap-4"></div>
+</section>
+
+<section id="family" class="screen">
+  <h2 class="text-3xl font-black" data-i18n="familyTitle">Profile & Schedule</h2>
+  <p class="text-gray-600 mb-5" data-i18n="familySub">Update your personal profile, household rooms, resident schedules, school/work timings, and holiday dates.</p>
+  <div class="card p-5 max-w-3xl space-y-6">
+    <div>
+      <label class="font-bold" data-i18n="userName">User Name</label>
+      <input id="userName" type="text" placeholder="Enter your name" class="mt-2">
+    </div>
+    <div>
+      <label class="font-bold" data-i18n="address">Home Address</label>
+      <textarea id="address" placeholder="Enter your address" rows="2" class="mt-2"></textarea>
+    </div>
+    <div>
+      <label class="font-bold" data-i18n="residents">Number of residents</label>
+      <input id="residents" type="number" min="1" max="20" value="4" class="mt-2">
+    </div>
+
+    <!-- Detailed Resident Schedule Section -->
+    <div class="border-t pt-4">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="text-lg font-black" data-i18n="residentSchedulesTitle">Resident Daily & Routine Schedules</h3>
+        <button class="btn blue text-xs py-2 px-3" onclick="addResidentProfile()" data-i18n="addResident">+ Add Resident</button>
+      </div>
+      <div id="residentsListContainer" class="space-y-4"></div>
+    </div>
+
+    <!-- Holiday Schedule Section -->
+    <div class="border-t pt-4">
+      <h3 class="text-lg font-black mb-3" data-i18n="holidayScheduleTitle">Household Holiday Schedule</h3>
+      <div class="grid md:grid-cols-2 gap-4">
+        <div>
+          <label class="font-bold text-sm" data-i18n="holidayDeparture">Departure Date</label>
+          <input id="holidayDeparture" type="date" class="mt-2">
+        </div>
+        <div>
+          <label class="font-bold text-sm" data-i18n="holidayArrival">Arrival Date</label>
+          <input id="holidayArrival" type="date" class="mt-2">
+        </div>
+      </div>
+    </div>
+
+    <button class="btn blue mt-3" onclick="saveFamily()" data-i18n="save">Save Profile & Schedule</button>
+    <div id="familyMsg" class="font-bold text-green-600"></div>
+  </div>
+</section>
+
+<section id="dailyUsageTab" class="screen">
+  <h2 class="text-3xl font-black" data-i18n="dailyUsageTitle">Daily Electricity Usage Key-In</h2>
+  <p class="text-gray-600 mb-5" data-i18n="dailyUsageSub">Log your meter readings or power consumption records each day to monitor progress.</p>
+  <div class="card p-5 max-w-2xl">
+    <div class="grid md:grid-cols-2 gap-4">
+      <div>
+        <label class="font-bold" data-i18n="logDate">Date</label>
+        <input id="logDate" type="date" class="mt-2">
+      </div>
+      <div>
+        <label class="font-bold" data-i18n="logKwh">Usage (kWh)</label>
+        <input id="logKwh" type="number" step="0.01" placeholder="e.g., 12.5" class="mt-2">
+      </div>
+    </div>
+    <button class="btn blue mt-5" onclick="saveDailyUsage()" data-i18n="saveLog">Save Daily Log</button>
+    <div id="logMsg" class="mt-3 font-bold text-green-600"></div>
+    <div class="mt-6">
+      <h3 class="font-bold text-lg mb-2" data-i18n="recentLogs">Recent Daily Entries</h3>
+      <div id="logHistory" class="space-y-2 text-sm text-gray-700"></div>
+    </div>
+  </div>
+</section>
+
+<section id="billUploadTab" class="screen">
+  <h2 class="text-3xl font-black" data-i18n="billUploadTitle">Monthly Electric Bill Upload</h2>
+  <p class="text-gray-600 mb-5" data-i18n="billUploadSub">Upload your utility statement image or PDF document to track monthly electricity costs.</p>
+  <div class="card p-5 max-w-2xl">
+    <div class="space-y-4">
+      <div>
+        <label class="font-bold" data-i18n="billMonth">Billing Month & Year</label>
+        <input id="billMonth" type="month" class="mt-2">
+      </div>
+      <div>
+        <label class="font-bold" data-i18n="billAmount">Total Amount ($ / RM)</label>
+        <input id="billAmount" type="number" step="0.01" placeholder="e.g., 150.00" class="mt-2">
+      </div>
+      <div>
+        <label class="font-bold" data-i18n="billFile">Upload Bill Document/Image</label>
+        <input id="billFile" type="file" accept="image/*,.pdf" class="mt-2 bg-gray-50">
+      </div>
+    </div>
+    <button class="btn blue mt-5" onclick="saveMonthlyBill()" data-i18n="saveBill">Upload & Save Bill</button>
+    <div id="billMsg" class="mt-3 font-bold text-green-600"></div>
+    <div class="mt-6">
+      <h3 class="font-bold text-lg mb-2" data-i18n="savedBills">Uploaded Bills Archive</h3>
+      <div id="billHistory" class="space-y-2 text-sm text-gray-700"></div>
+    </div>
+  </div>
+</section>
+
+<section id="chat" class="screen">
+  <h2 class="text-3xl font-black" data-i18n="chatTitle">AI Eco Coach</h2>
+  <p class="text-gray-600 mb-5" data-i18n="chatSub">Ask the coach about saving electricity based on your reference table standards.</p>
+  <div class="card p-5">
+    <div id="chatBox" class="chat"></div>
+    <div class="flex gap-2 mt-4">
+      <input id="chatInput" data-i18n-placeholder="chatPlaceholder" placeholder="Ask: What should I switch off now?">
+      <button class="btn blue" onclick="sendChat()" data-i18n="send">Send</button>
+    </div>
+  </div>
+</section>
+</main>
+</div>
+<footer class="text-center text-sm text-gray-500 p-4" data-i18n="footer">Eco Hero AI Assistant • Smarter habits, lower energy use, greener homes.</footer>
+</div>
+
+<script>
+// Browser/Safari open helper scripts
+function openWithSafari() {
+  const currentUrl = window.location.href;
+  if (/iPad|iPhone|iPod/.test(navigator.userAgent)) {
+    window.location.href = "safari-" + currentUrl;
+  } else {
+    alert("Please open this link inside Apple Safari on your iPhone.");
+  }
+}
+
+function openWithDefaultBrowser() {
+  window.open(window.location.href, '_blank');
+}
+
+// Complete Appliance Energy Reference Table from the Excel Dataset
+const APPLIANCE_REFERENCE = {
+  "Air Conditioner 1.0 HP": { standard: "900–1,000 W", inverter: "600–800 W", usage: "0.90–1.00 kWh/h", ecoUsage: "0.60–0.80 kWh/h", action: "Set 24–26°C + Eco Mode" },
+  "Air Conditioner 1.5 HP": { standard: "1,200–1,400 W", inverter: "800–1,100 W", usage: "1.20–1.40 kWh/h", ecoUsage: "0.80–1.10 kWh/h", action: "Set 24–26°C + Eco Mode" },
+  "Air Conditioner 2.0 HP": { standard: "1,700–2,000 W", inverter: "1,100–1,500 W", usage: "1.70–2.00 kWh/h", ecoUsage: "1.10–1.50 kWh/h", action: "Eco Mode + suitable temperature" },
+  "Air Conditioner 2.5 HP": { standard: "2,100–2,500 W", inverter: "1,400–1,900 W", usage: "2.10–2.50 kWh/h", ecoUsage: "1.40–1.90 kWh/h", action: "Eco Mode + reduce unnecessary use" },
+  "Refrigerator": { standard: "100–200 W", inverter: "70–150 W", usage: "0.10–0.20 kWh/h", ecoUsage: "0.07–0.15 kWh/h", action: "Keep door closed" },
+  "Freezer": { standard: "100–250 W", inverter: "80–180 W", usage: "0.10–0.25 kWh/h", ecoUsage: "0.08–0.18 kWh/h", action: "Avoid frequent opening" },
+  "Ceiling Fan": { standard: "50–80 W", inverter: "35–60 W", usage: "0.05–0.08 kWh/h", ecoUsage: "0.035–0.06 kWh/h", action: "Use lower speed" },
+  "Standing Fan": { standard: "40–70 W", inverter: "30–50 W", usage: "0.04–0.07 kWh/h", ecoUsage: "0.03–0.05 kWh/h", action: "Use lower speed" },
+  "LED Light": { standard: "5–15 W", inverter: "4–12 W", usage: "0.005–0.015 kWh/h", ecoUsage: "0.004–0.012 kWh/h", action: "Switch off when unused" },
+  "Fluorescent Light": { standard: "18–40 W", inverter: "15–35 W", usage: "0.018–0.040 kWh/h", ecoUsage: "0.015–0.035 kWh/h", action: "Replace with LED" },
+  "LED Television": { standard: "60–150 W", inverter: "40–100 W", usage: "0.06–0.15 kWh/h", ecoUsage: "0.04–0.10 kWh/h", action: "Use Eco Mode" },
+  "Desktop Computer": { standard: "100–300 W", inverter: "70–220 W", usage: "0.10–0.30 kWh/h", ecoUsage: "0.07–0.22 kWh/h", action: "Power-Saving Mode" },
+  "Laptop": { standard: "30–90 W", inverter: "20–70 W", usage: "0.03–0.09 kWh/h", ecoUsage: "0.02–0.07 kWh/h", action: "Battery/Power-Saving Mode" },
+  "Washing Machine": { standard: "400–800 W", inverter: "300–600 W", usage: "0.40–0.80 kWh/h", ecoUsage: "0.30–0.60 kWh/h", action: "Eco / Cold-Water Cycle" },
+  "Dryer": { standard: "1,500–3,000 W", inverter: "1,000–2,000 W", usage: "1.50–3.00 kWh/h", ecoUsage: "1.00–2.00 kWh/h", action: "Eco / Sensor Dry" },
+  "Rice Cooker": { standard: "500–900 W", inverter: "400–700 W", usage: "0.50–0.90 kWh/h", ecoUsage: "0.40–0.70 kWh/h", action: "Reduce Keep-Warm Time" },
+  "Electric Kettle": { standard: "1,500–2,500 W", inverter: "1,200–2,000 W", usage: "1.50–2.50 kWh/h", ecoUsage: "1.20–2.00 kWh/h", action: "Boil Only Required Amount" },
+  "Microwave Oven": { standard: "800–1,500 W", inverter: "600–1,200 W", usage: "0.80–1.50 kWh/h", ecoUsage: "0.60–1.20 kWh/h", action: "Use Only Required Time" },
+  "Electric Oven": { standard: "1,500–3,000 W", inverter: "1,200–2,400 W", usage: "1.50–3.00 kWh/h", ecoUsage: "1.20–2.40 kWh/h", action: "Avoid Unnecessary Preheating" },
+  "Air Fryer": { standard: "1,000–2,000 W", inverter: "800–1,600 W", usage: "1.00–2.00 kWh/h", ecoUsage: "0.80–1.60 kWh/h", action: "Use Appropriate Cooking Time" },
+  "Electric Stove": { standard: "1,000–2,500 W", inverter: "800–2,000 W", usage: "1.00–2.50 kWh/h", ecoUsage: "0.80–2.00 kWh/h", action: "Use Suitable Heat Level" },
+  "Water Heater": { standard: "2,000–4,500 W", inverter: "1,500–3,500 W", usage: "2.00–4.50 kWh/h", ecoUsage: "1.50–3.50 kWh/h", action: "Reduce Heating Time + Eco Mode" },
+  "Water Dispenser": { standard: "300–700 W", inverter: "200–500 W", usage: "0.30–0.70 kWh/h", ecoUsage: "0.20–0.50 kWh/h", action: "Use Eco Mode" },
+  "Vacuum Cleaner": { standard: "600–1,600 W", inverter: "400–1,200 W", usage: "0.60–1.60 kWh/h", ecoUsage: "0.40–1.20 kWh/h", action: "Use Suitable Power" },
+  "Hair Dryer": { standard: "1,000–2,200 W", inverter: "700–1,600 W", usage: "1.00–2.20 kWh/h", ecoUsage: "0.70–1.60 kWh/h", action: "Reduce Operating Time" },
+  "Iron": { standard: "1,000–2,400 W", inverter: "700–1,800 W", usage: "1.00–2.40 kWh/h", ecoUsage: "0.70–1.80 kWh/h", action: "Iron Clothes in Batches" },
+  "Game Console": { standard: "70–220 W", inverter: "40–150 W", usage: "0.07–0.22 kWh/h", ecoUsage: "0.04–0.15 kWh/h", action: "Energy-Saving Mode" },
+  "Wi-Fi Router": { standard: "5–20 W", inverter: "4–15 W", usage: "0.005–0.020 kWh/h", ecoUsage: "0.004–0.015 kWh/h", action: "Use Efficient Equipment" },
+  "Printer": { standard: "300–600 W", inverter: "100–300 W", usage: "0.30–0.60 kWh/h", ecoUsage: "0.10–0.30 kWh/h", action: "Sleep Mode" },
+  "Desktop Monitor": { standard: "20–60 W", inverter: "15–40 W", usage: "0.02–0.06 kWh/h", ecoUsage: "0.015–0.04 kWh/h", action: "Automatic Sleep" },
+  "Set-Top Box": { standard: "10–30 W", inverter: "5–15 W", usage: "0.01–0.03 kWh/h", ecoUsage: "0.005–0.015 kWh/h", action: "Standby/Sleep Mode" },
+  "Water Pump": { standard: "300–1,000 W", inverter: "250–800 W", usage: "0.30–1.00 kWh/h", ecoUsage: "0.25–0.80 kWh/h", action: "Reduce Unnecessary Operation" },
+  "Aquarium Pump": { standard: "5–50 W", inverter: "4–40 W", usage: "0.005–0.05 kWh/h", ecoUsage: "0.004–0.04 kWh/h", action: "Use Efficient Pump" },
+  "Decorative Lights": { standard: "5–100 W", inverter: "3–70 W", usage: "0.005–0.10 kWh/h", ecoUsage: "0.003–0.07 kWh/h", action: "Switch Off When Unneeded" },
+  "Massage Chair": { standard: "100–300 W", inverter: "70–220 W", usage: "0.10–0.30 kWh/h", ecoUsage: "0.07–0.22 kWh/h", action: "Use only when needed + Standby Off" },
+  "Treadmill": { standard: "600–1,500 W", inverter: "400–1,100 W", usage: "0.60–1.50 kWh/h", ecoUsage: "0.40–1.10 kWh/h", action: "Use suitable speed + switch off after use" },
+  "Stand Lamp": { standard: "5–20 W", inverter: "4–15 W", usage: "0.005–0.020 kWh/h", ecoUsage: "0.004–0.015 kWh/h", action: "Use LED bulb + switch off when unused" },
+  "Air Ventilator": { standard: "20–80 W", inverter: "15–60 W", usage: "0.020–0.080 kWh/h", ecoUsage: "0.015–0.060 kWh/h", action: "Use timer + suitable ventilation level" },
+  "Blender": { standard: "300–1,000 W", inverter: "250–800 W", usage: "0.30–1.00 kWh/h", ecoUsage: "0.25–0.80 kWh/h", action: "Blend only for required time" },
+  "Sound Box / Home Theatre": { standard: "50–500 W", inverter: "30–350 W", usage: "0.05–0.50 kWh/h", ecoUsage: "0.03–0.35 kWh/h", action: "Use Eco/Auto Standby Mode + switch off after use" }
+};
+
+const T={
+en:{
+tagline:"Your agentive electricity-saving assistant",language:"Language",demo:"DEMO",dashboard:"Dashboard",floorPlan:"Floor Plan",family:"Profile & Schedule",aiCoach:"AI Eco Coach",
+dailyTab:"Daily Usage Key-In",billTab:"Monthly Bill Upload",
+dashTitle:"Eco Dashboard",dashSub:"Monitor your home and let the agentive AI guide your next energy-saving action.",ecoPoints:"Eco Points",todaySaving:"Today's estimated saving",actionsDone:"Hourly actions completed",
+agentive:"AGENTIVE AI + EXCEL REFERENCE TABLE",hourlyTitle:"HOURLY AI SAVING ASSISTANT",hourlySub:"The AI references your active devices with standard/inverter energy profiles to optimize recommendations.",currentTimeLabel:"Current Time",
+recommendation:"AI Recommendation",potentialSaving:"Potential saving",confirm:"Did you follow the AI recommendation?",yes:"YES, I DID IT ✅",no:"NO, NOT YET ❌",dailyProgress:"Daily progress",
+floorTitle:"House Floor Plan",floorSub:"Add rooms and select appliances from your energy reference table for precise AI tracking.",roomPlaceholder:"Custom Room name",addRoom:"+ Add Room",
+familyTitle:"Profile & Schedule",familySub:"Update your personal profile and basic household schedule.",userName:"User Name",address:"Home Address",residents:"Number of residents",wake:"Wake-up time",sleep:"Sleeping time",homeFrom:"Usually home from",homeUntil:"Usually home until",save:"Save Profile & Schedule",
+dailyUsageTitle:"Daily Electricity Usage Key-In",dailyUsageSub:"Log your meter readings or power consumption records each day to monitor progress.",logDate:"Date",logKwh:"Usage (kWh)",saveLog:"Save Daily Log",recentLogs:"Recent Daily Entries",logSavedMsg:"Daily usage recorded successfully! +5 Eco Points 🌱",
+billUploadTitle:"Monthly Electric Bill Upload",billUploadSub:"Upload your utility statement image or PDF document to track monthly electricity costs.",billMonth:"Billing Month & Year",billAmount:"Total Amount ($ / RM)",billFile:"Upload Bill Document/Image",saveBill:"Upload & Save Bill",savedBills:"Uploaded Bills Archive",billSavedMsg:"Monthly bill uploaded and saved successfully!",
+chatTitle:"AI Eco Coach",chatSub:"Ask the coach about saving electricity based on standard reference profiles.",chatPlaceholder:"Ask: What should I switch off now?",send:"Send",
+footer:"Eco Hero AI Assistant • Smarter habits, lower energy use, greener homes.",on:"ON",off:"OFF",addAppliance:"Add appliance",applianceName:"Appliance name",power:"Power (W)",turnOn:"Turn ON",turnOff:"Turn OFF",
+noAppliance:"No suitable high-power appliance is currently ON according to your reference table. Keep monitoring.",
+yesMsg:"Great! Action recorded using reference profile. +10 Eco Points 🌱",noMsg:"No problem. The AI will keep monitoring your usage.",saved:"Profile and schedule saved successfully!",
+hour:"Hour",coachIntro:"Hello! I am your Eco Coach, backed by your Excel Appliance Energy Reference Table. How can I help you lower your bills?",
+coachDefault:"Check the Hourly AI Saving Assistant for real-time recommendations matching your active appliances.",
+demoMsg:"Demo data loaded with standard appliance profiles.",
+graphTitle:"Daily Electricity Usage & Saving Achievement",graphSub:"Compare your daily electricity usage (kWh) against your daily saving achievements.",graphEmpty:"Enter your daily electricity usage to see your graph.",
+residentSchedulesTitle:"Resident Daily & Routine Schedules",addResident:"+ Add Resident",residentNameLabel:"Resident Name",residentWake:"Wake-up Time",residentSleep:"Sleeping Time",schoolGoing:"School Going Time",schoolReturn:"School Return Time",workGoing:"Work Going Time",workReturn:"Work Return Time",
+holidayScheduleTitle:"Household Holiday Schedule",holidayDeparture:"Departure Date",holidayArrival:"Arrival Date"
+},
+ms:{
+tagline:"Pembantu AI penjimatan elektrik agentif anda",language:"Bahasa",demo:"DEMO",dashboard:"Papan Pemuka",floorPlan:"Pelan Lantai",family:"Profil & Jadual",aiCoach:"Jurulatih Eco AI",
+dailyTab:"Kunci Masuk Penggunaan Harian",billTab:"Muat Naik Bil Bulanan",
+dashTitle:"Papan Pemuka Eco",dashSub:"Pantau rumah anda dan biarkan AI agentif membimbing tindakan penjimatan tenaga.",ecoPoints:"Mata Eco",todaySaving:"Anggaran penjimatan hari ini",actionsDone:"Tindakan setiap jam selesai",
+agentive:"AI AGENTIF + JADUAL RUJUKAN EXCEL",hourlyTitle:"PEMBANTU AI PENJIMATAN ELEKTRIK",hourlySub:"AI merujuk peranti aktif anda dengan profil tenaga standard/inverter untuk pengoptimuman.",currentTimeLabel:"Masa Semasa",
+recommendation:"Cadangan AI",potentialSaving:"Potensi penjimatan",confirm:"Adakah anda mengikuti cadangan AI?",yes:"YA, SAYA SUDAH BUAT ✅",no:"TIDAK, BELUM ❌",dailyProgress:"Kemajuan harian",
+floorTitle:"Pelan Lantai Rumah",floorSub:"Tambah bilik dan pilih peralatan daripada jadual rujukan.",roomPlaceholder:"Nama bilik tersuai",addRoom:"+ Tambah Bilik",
+familyTitle:"Profil & Jadual",familySub:"Kemas kini profil peribadi dan jadual isi rumah anda.",userName:"Nama Pengguna",address:"Alamat Rumah",residents:"Bilangan penghuni",wake:"Masa bangun",sleep:"Masa tidur",homeFrom:"Biasanya di rumah dari",homeUntil:"Biasanya di rumah hingga",save:"Simpan Profil & Jadual",
+dailyUsageTitle:"Kunci Masuk Penggunaan Elektrik Harian",dailyUsageSub:"Catat bacaan meter atau rekod penggunaan kuasa setiap hari.",logDate:"Tarikh",logKwh:"Penggunaan (kWh)",saveLog:"Simpan Rekod Harian",recentLogs:"Entri Harian Terkini",logSavedMsg:"Penggunaan harian berjaya direkodkan! +5 Mata Eco 🌱",
+billUploadTitle:"Muat Naik Bil Elektrik Bulanan",billUploadSub:"Muat naik imej penyata utiliti atau dokumen PDF anda.",billMonth:"Bulan & Tahun Bil",billAmount:"Jumlah Keseluruhan ($ / RM)",billFile:"Muat Naik Dokumen/Imej Bil",saveBill:"Muat Naik & Simpan Bil",savedBills:"Arkib Bil Dimuat Naik",billSavedMsg:"Bil bulanan berjaya dimuat naik dan disimpan!",
+chatTitle:"Jurulatih Eco AI",chatSub:"Tanya jurulatih tentang cara menjimatkan elektrik di rumah.",chatPlaceholder:"Tanya: Apa yang patut saya matikan sekarang?",send:"Hantar",
+footer:"Eco Hero AI Assistant • Tabiat lebih bijak, penggunaan tenaga lebih rendah, rumah lebih hijau.",on:"HIDUP",off:"MATI",addAppliance:"Tambah peralatan",applianceName:"Nama peralatan",power:"Kuasa (W)",turnOn:"Hidupkan",turnOff:"Matikan",
+noAppliance:"Tiada peralatan berkuasa tinggi sedang hidup berdasarkan jadual rujukan.",
+yesMsg:"Bagus! Tindakan direkodkan. +10 Mata Eco 🌱",noMsg:"Tiada masalah. AI akan terus memantau.",saved:"Profil dan jadual berjaya disimpan!",
+hour:"Jam",coachIntro:"Hai! Saya Jurulatih Eco anda yang disokong oleh Jadual Rujukan Tenaga Excel.",coachDefault:"Semak Pembantu AI untuk cadangan masa nyata.",
+demoMsg:"Data demo dimuatkan.",
+graphTitle:"Penggunaan Elektrik Harian & Pencapaian Penjimatan",graphSub:"Bandingkan penggunaan elektrik harian (kWh) dengan pencapaian penjimatan.",graphEmpty:"Masukkan penggunaan elektrik harian anda untuk melihat graf.",
+residentSchedulesTitle:"Jadual Harian Penghuni",addResident:"+ Tambah Penghuni",residentNameLabel:"Nama Penghuni",residentWake:"Masa Bangun",residentSleep:"Masa Tidur",schoolGoing:"Masa Pergi Sekolah",schoolReturn:"Masa Balik Sekolah",workGoing:"Masa Pergi Kerja",workReturn:"Masa Balik Kerja",
+holidayScheduleTitle:"Jadual Cuti Isi Rumah",holidayDeparture:"Tarikh Berlepas",holidayArrival:"Tarikh Ketibaan"
+},
+zh:{
+tagline:"您的智能主动节电助手",language:"语言",demo:"演示",dashboard:"仪表板",floorPlan:"房屋平面图",family:"个人资料与时间表",aiCoach:"AI 环保教练",
+dailyTab:"每日用电记录",billTab:"每月账单上传",
+dashTitle:"环保仪表板",dashSub:"监控您的家庭，让主动式 AI 指导节能行动。",ecoPoints:"环保积分",todaySaving:"今日预计节省",actionsDone:"已完成的每小时行动",
+agentive:"主动式 AI + EXCEL 参考表",hourlyTitle:"每小时 AI 节电助手",hourlySub:"AI根据标准与变频能耗配置文件优化您的节能建议。",currentTimeLabel:"当前时间",
+recommendation:"AI 建议",potentialSaving:"预计节省",confirm:"您是否执行了 AI 建议？",yes:"是的，我做到了 ✅",no:"还没有 ❌",dailyProgress:"每日进度",
+floorTitle:"房屋平面图",floorSub:"使用您的能耗参考表添加房间和电器。",roomPlaceholder:"自定义房间名称",addRoom:"+ 添加房间",
+familyTitle:"个人资料与时间表",familySub:"更新您的个人资料和家庭基本日程。",userName:"用户名",address:"家庭住址",residents:"家庭成员人数",wake:"起床时间",sleep:"睡觉时间",homeFrom:"通常在家时间从",homeUntil:"通常在家时间到",save:"保存资料与时间表",
+dailyUsageTitle:"每日电量使用记录",dailyUsageSub:"每天记录您的电表读数或用电量。",logDate:"日期",logKwh:"用电量 (kWh)",saveLog:"保存每日记录",recentLogs:"近期日常条目",logSavedMsg:"每日用电量记录成功！+5 环保积分 🌱",
+billUploadTitle:"每月电费账单上传",billUploadSub:"上传您的电费账单图片或 PDF 文档以追踪月度电费。",billMonth:"账单月份与年份",billAmount:"总金额 ($ / RM)",billFile:"上传账单文件/图片",saveBill:"上传并保存账单",savedBills:"已上传账单存档",billSavedMsg:"月度账单已成功上传并保存！",
+chatTitle:"AI 环保教练",chatSub:"向教练咨询家庭节电方法。",chatPlaceholder:"例如：现在应该关闭什么？",send:"发送",
+footer:"Eco Hero AI Assistant • 更聪明的习惯，更低的能耗，更绿色的家庭。",on:"开启",off:"关闭",addAppliance:"添加电器",applianceName:"电器名称",power:"功率 (W)",turnOn:"开启",turnOff:"关闭",
+noAppliance:"根据参考表，目前没有高功率电器处于开启状态。",
+yesMsg:"很好！行动已记录。+10环保积分 🌱",noMsg:"没关系。AI会继续监测。",saved:"个人资料与时间表保存成功！",
+hour:"小时",coachIntro:"你好！我是您的环保教练，依托 Excel 电器能耗参考表为您服务。",coachDefault:"查看每小时 AI 节电助手获取实时建议。",
+demoMsg:"演示数据已加载。",
+graphTitle:"每日电量使用与节能成就",graphSub:"对比您的每日电量使用量 (kWh) 与节能成就。",graphEmpty:"输入您的每日用电量以查看图表。",
+residentSchedulesTitle:"住户日常及作息时间表",addResident:"+ 添加住户",residentNameLabel:"住户姓名",residentWake:"起床时间",residentSleep:"睡觉时间",schoolGoing:"上学出发时间",schoolReturn:"放学回家时间",workGoing:"上班出发时间",workReturn:"下班回家时间",
+holidayScheduleTitle:"家庭假期时间表",holidayDeparture:"出发日期",holidayArrival:"到达日期"
+},
+ta:{
+tagline:"உங்கள்தானியங்கிமின்சாரச் சேமிப்பு AI உதவியாளர்",language:"மொழி",demo:"டெமோ",dashboard:"முகப்புப் பலகை",floorPlan:"வீட்டு வரைபடம்",family:"சுயவிவரம் & அட்டவணை",aiCoach:"AIசுற்றுச்சூழல் பயிற்சியாளர்",
+dailyTab:"தினசரிபயன்பாட்டு உள்ளீடு",billTab:"மாதாந்திர மின்சாரப் பில் பதிவேற்றம்",
+dashTitle:"Eco முகப்புப்பலகை",dashSub:"உங்கள் வீட்டைக் கண்காணித்து AI வழிகாட்டட்டும்.",ecoPoints:"Ecoபுள்ளிகள்",todaySaving:"இன்றைய மதிப்பிடப்பட்ட சேமிப்பு",actionsDone:"முடிக்கப்பட்ட மணிநேர நடவடிக்கைகள்",
+agentive:"தானியங்கி AI + Excel குறிப்பு அட்டவணை",hourlyTitle:"மணிநேர AI மின்சாரச் சேமிப்பு உதவியாளர்",hourlySub:"AIஉங்கள் சாதனங்களின் குறிப்பு சுயவிவரங்களை ஒப்பிட்டு பரிந்துரை செய்கிறது.",currentTimeLabel:"தற்போதைய நேரம்",
+recommendation:"AI பரிந்துரை",potentialSaving:"சாத்தியமான சேமிப்பு",confirm:"AIபரிந்துரையை நீங்கள் பின்பற்றினீர்களா?",yes:"ஆம், செய்துவிட்டேன் ✅",no:"இல்லை, இன்னும் இல்லை ❌",dailyProgress:"தினசரி முன்னேற்றம்",
+floorTitle:"வீட்டுவரைபடம்",floorSub:"உங்கள் ஆற்றல் குறிப்பு அட்டவணையிலிருந்து சாதனங்களைச் சேர்க்கவும்.",roomPlaceholder:"தனிப்பயன் அறையின் பெயர்",addRoom:"+ அறையைச் சேர்",
+familyTitle:"சுயவிவரம் & அட்டவணை",familySub:"உங்கள் தனிப்பட்ட சுயவிவரம் மற்றும் வீட்டு அட்டவணையைப் புதுப்பிக்கவும்.",userName:"பயனர் பெயர்",address:"வீட்டு முகவரி",residents:"வீட்டில் உள்ளவர்களின் எண்ணிக்கை",wake:"எழும் நேரம்",sleep:"தூங்கும் நேரம்",homeFrom:"பொதுவாக வீட்டில் இருப்பது",homeUntil:"பொதுவாக வீட்டில் இருப்பது முடியும் நேரம்",save:"சுயவிவரம் & அட்டவணையைச் சேமி",
+dailyUsageTitle:"தினசரிமின்சாரப் பயன்பாட்டு உள்ளீடு",dailyUsageSub:"உங்கள் மீட்டர் வாசிப்புகள் அல்லது நுகர்வு பதிவுகளை பதிவு செய்யுங்கள்.",logDate:"தேதி",logKwh:"பயன்பாடு (kWh)",saveLog:"தினசரிபதிவைச் சேமி",recentLogs:"சமீபத்திய உள்ளீடுகள்",logSavedMsg:"தினசரி பயன்பாடு வெற்றிகரமாகப் பதிவு செய்யப்பட்டது! +5 Eco புள்ளிகள் 🌱",
+billUploadTitle:"மாதாந்திரமின்சாரப் பில் பதிவேற்றம்",billUploadSub:"உங்கள் பயன்பாட்டு அறிக்கையின் படம் அல்லது PDF ஆவணத்தைப்பதிவேற்றவும்.",billMonth:"பில்லிங் மாதம் & ஆண்டு",billAmount:"மொத்த தொகை ($ / RM)",billFile:"பில்ஆவணம்/படத்தைப் பதிவேற்று",saveBill:"பதிவேற்றி பில்லைச் சேமி",savedBills:"பதிவேற்றப்பட்ட பில்கள் காப்பகம்",billSavedMsg:"மாதாந்திர பில் வெற்றிகரமாகப் பதிவேற்றப்பட்டுசேமிக்கப்பட்டது!",
+chatTitle:"AI சுற்றுச்சூழல்பயிற்சியாளர்",chatSub:"வீட்டில் மின்சாரத்தைச் சேமிப்பது பற்றி கேளுங்கள்.",chatPlaceholder:"உதாரணம்: இப்போது எதை அணைக்க வேண்டும்?",send:"அனுப்பு",
+footer:"Eco Hero AI Assistant • சிறந்தபழக்கங்கள், குறைந்த மின்சாரப் பயன்பாடு, பசுமையான வீடுகள்.",on:"இயக்கம்",off:"நிறுத்தம்",addAppliance:"மின்சாதனத்தைச் சேர்",applianceName:"மின்சாதனத்தின் பெயர்",power:"மின்சக்தி (W)",turnOn:"இயக்கு",turnOff:"அணை",
+noAppliance:"தற்போதுஅதிக மின்சாரம் பயன்படுத்தும் சாதனம் எதுவும் ON நிலையில் இல்லை.",
+yesMsg:"சிறப்பு!நடவடிக்கை பதிவு செய்யப்பட்டது. +10 Eco புள்ளிகள் 🌱",noMsg:"பரவாயில்லை.",saved:"சுயவிவரம் மற்றும் அட்டவணை வெற்றிகரமாக சேமிக்கப்பட்டது!",
+hour:"மணி",coachIntro:"வணக்கம்! Excel ஆற்றல் குறிப்பு அட்டவணை மூலம் நான் உங்களுக்கு உதவுகிறேன்.",coachDefault:"மணிநேர உதவியாளரைப் பார்க்கவும்.",
+demoMsg:"டெமோதரவு ஏற்றப்பட்டது.",
+graphTitle:"தினசரி மின்சார பயன்பாடு மற்றும் சேமிப்பு சாதனை",graphSub:"உங்கள் தினசரி மின்சார பயன்பாட்டை (kWh) சேமிப்பு சாதனைகளுடன் ஒப்பிடுக.",graphEmpty:"உங்கள் வரைபடத்தைக் காண தினசரி மின்சார பயன்பாட்டை உள்ளிடவும்.",
+residentSchedulesTitle:"குடியிருப்பாளர் தினசரி அட்டவணைகள்",addResident:"+ குடியրப்பினர் சேர்",residentNameLabel:"குடியிருப்பாளர் பெயர்",residentWake:"விழிக்கும் நேரம்",residentSleep:"தூங்கும் நேரம்",schoolGoing:"பள்ளி செல்லும் நேரம்",schoolReturn:"பள்ளி திரும்பும் நேரம்",workGoing:"வேலைக்குச் செல்லும் நேரம்",workReturn:"வேலை முடிந்து திரும்பும் நேரம்",
+holidayScheduleTitle:"வீட்டு விடுமுறை அட்டவணை",holidayDeparture:"புறப்படும் தேதி",holidayArrival:"வரும் தேதி"
+}};
+
+let lang = localStorage.getItem("ecoHeroLanguage") || "en";
+let points = Number(localStorage.getItem("ecoPoints") || 0);
+let saving = Number(localStorage.getItem("ecoSaving") || 0);
+let actions = Number(localStorage.getItem("ecoActions") || 0);
+let rooms = JSON.parse(localStorage.getItem("ecoRooms") || "null") || [
+  {name:"Living Room", appliances:[{name:"Air Conditioner 1.0 HP",power:900,on:true},{name:"LED Television",power:100,on:true}]},
+  {name:"Kitchen", appliances:[{name:"Refrigerator",power:150,on:true},{name:"Rice Cooker",power:700,on:false}]}
+];
+let family = JSON.parse(localStorage.getItem("ecoFamily") || "null") || {
+  name:"", address:"", residents:4, wake:"06:30", sleep:"22:30", homeFrom:"17:00", homeUntil:"22:00",
+  residentsList: [
+    {name: "Resident 1", wake: "06:30", sleep: "22:30", schoolGoing: "", schoolReturn: "", workGoing: "08:00", workReturn: "17:30"}
+  ],
+  holidayDeparture: "", holidayArrival: ""
+};
+let dailyLogs = JSON.parse(localStorage.getItem("ecoDailyLogs") || "[]");
+let monthlyBills = JSON.parse(localStorage.getItem("ecoMonthlyBills") || "[]");
+let currentTarget = null;
+let dashboardChartInstance = null;
+
+function t(k){return T[lang][k]??T.en[k]??k}
+
+function setText(){
+  document.documentElement.lang=lang;
+  document.querySelectorAll("[data-i18n]").forEach(e=>e.textContent=t(e.dataset.i18n));
+  document.querySelectorAll("[data-i18n-placeholder]").forEach(e=>e.placeholder=t(e.dataset.i18nPlaceholder));
+}
+
+function updateClock(){
+  const now = new Date();
+  let hours = now.getHours();
+  const minutes = now.getMinutes();
+  const ampm = hours >= 12 ? 'PM' : 'AM';
+  hours = hours % 12;
+  hours = hours ? hours : 12;
+  const minutesStr = minutes < 10 ? '0' + minutes : minutes;
+  const timeStr = `${hours}:${minutesStr} ${ampm}`;
+  const hrEl = document.getElementById("hourText");
+  if(hrEl) hrEl.textContent = timeStr;
+}
+
+function initApp(){
+  setText();
+  document.getElementById("languageSelect").value = lang;
+  document.getElementById("languageSelect").addEventListener("change", (e)=>{
+    lang = e.target.value;
+    localStorage.setItem("ecoHeroLanguage", lang);
+    setText();
+    renderAll();
+  });
+
+  // Navigation
+  document.querySelectorAll(".navbtn").forEach(btn=>{
+    btn.addEventListener("click", ()=>{
+      document.querySelectorAll(".navbtn").forEach(b=>b.classList.remove("active"));
+      document.querySelectorAll(".screen").forEach(s=>s.classList.remove("active"));
+      btn.classList.add("active");
+      const screenId = btn.dataset.screen;
+      document.getElementById(screenId).classList.add("active");
+      if(screenId === "dashboard"){
+        renderDashboardChart();
+      }
+    });
+  });
+
+  loadFamilyToDOM();
+  renderAll();
+  setInterval(updateClock, 1000);
+  updateClock();
+}
+
+function renderAll(){
+  document.getElementById("points").textContent = points;
+  document.getElementById("saving").textContent = saving.toFixed(2);
+  document.getElementById("actionsDone").textContent = actions;
+  
+  renderRooms();
+  renderRecommendation();
+  renderDailyLogs();
+  renderBillHistory();
+  renderDashboardChart();
+}
+
+function renderRecommendation(){
+  const recEl = document.getElementById("recommendation");
+  const reasonEl = document.getElementById("reason");
+  const potentialEl = document.getElementById("potential");
+  const infoEl = document.getElementById("applianceInfo");
+
+  let activeAppliances = [];
+  rooms.forEach(r => {
+    r.appliances.forEach(a => {
+      if(a.on) activeAppliances.push({room: r.name, name: a.name, power: a.power});
+    });
+  });
+
+  // Check holiday or schedules
+  let isHolidayActive = false;
+  if(family.holidayDeparture && family.holidayArrival){
+    const todayStr = new Date().toISOString().split('T')[0];
+    if(todayStr >= family.holidayDeparture && todayStr <= family.holidayArrival){
+      isHolidayActive = true;
+    }
+  }
+
+  if(isHolidayActive){
+    recEl.textContent = "Household on Holiday!";
+    reasonEl.textContent = "Your household is currently scheduled to be away. Consider reducing unnecessary electricity usage while the home is unoccupied.";
+    potentialEl.textContent = "2.50 kWh";
+    infoEl.textContent = "Home is on holiday schedule. Switch off all non-essential items.";
+    currentTarget = {name: "Holiday Shutdown", potential: 2.50};
+    return;
+  }
+
+  if(activeAppliances.length === 0){
+    recEl.textContent = "All Clear!";
+    reasonEl.textContent = t("noAppliance");
+    potentialEl.textContent = "0.00 kWh";
+    infoEl.textContent = "No active appliances found.";
+    currentTarget = null;
+    return;
+  }
+
+  // Pick first active appliance
+  const target = activeAppliances[0];
+  const ref = APPLIANCE_REFERENCE[target.name] || { action: "Switch off when unused", usage: "0.10 kWh/h" };
+  
+  recEl.textContent = `${target.name} (${target.room})`;
+  reasonEl.textContent = `Recommended action: ${ref.action}. (Active power: ${target.power}W)`;
+  potentialEl.textContent = "0.50 kWh";
+  infoEl.textContent = `Standard usage rate: ${ref.usage}`;
+  currentTarget = target;
+}
+
+function feedback(didIt){
+  const fbEl = document.getElementById("feedback");
+  if(didIt){
+    points += 10;
+    saving += 0.50;
+    actions += 1;
+    fbEl.textContent = t("yesMsg");
+    fbEl.className = "text-sm font-bold mt-3 text-green-600";
+    
+    // Also log saving achievement for today in daily logs if today exists
+    recordTodaySavingAchievement(0.50);
+  } else {
+    fbEl.textContent = t("noMsg");
+    fbEl.className = "text-sm font-bold mt-3 text-amber-600";
+  }
+  localStorage.setItem("ecoPoints", points);
+  localStorage.setItem("ecoSaving", saving);
+  localStorage.setItem("ecoActions", actions);
+  renderAll();
+}
+
+function recordTodaySavingAchievement(savingAmount){
+  const todayStr = new Date().toISOString().split('T')[0];
+  let existingLog = dailyLogs.find(l => l.date === todayStr);
+  if(existingLog){
+    existingLog.savingAchievement = (Number(existingLog.savingAchievement || 0) + savingAmount);
+  } else {
+    dailyLogs.push({date: todayStr, kwh: 10.0, savingAchievement: savingAmount});
+  }
+  localStorage.setItem("ecoDailyLogs", JSON.stringify(dailyLogs));
+}
+
+// Floor Plan & Rooms
+function addRoom(){
+  const nameSelect = document.getElementById("roomNameSelect").value;
+  const customName = document.getElementById("roomNameCustom").value.trim();
+  const roomName = customName ? customName : nameSelect;
+  
+  if(!roomName) return;
+  rooms.push({name: roomName, appliances: []});
+  document.getElementById("roomNameCustom").value = "";
+  saveRooms();
+  renderRooms();
+}
+
+function deleteRoom(index){
+  rooms.splice(index, 1);
+  saveRooms();
+  renderRooms();
+}
+
+function addApplianceToRoom(roomIndex){
+  const select = document.getElementById(`appSelect_${roomIndex}`);
+  const appName = select.value;
+  const ref = APPLIANCE_REFERENCE[appName];
+  let defaultPower = 100;
+  if(ref && ref.standard){
+    const parts = ref.standard.replace(/[^0-9–]/g, "").split("–");
+    defaultPower = parseInt(parts[0]) || 100;
+  }
+  rooms[roomIndex].appliances.push({name: appName, power: defaultPower, on: true});
+  saveRooms();
+  renderRooms();
+}
+
+function toggleAppliance(roomIndex, appIndex){
+  rooms[roomIndex].appliances[appIndex].on = !rooms[roomIndex].appliances[appIndex].on;
+  saveRooms();
+  renderRooms();
+}
+
+function deleteAppliance(roomIndex, appIndex){
+  rooms[roomIndex].appliances.splice(appIndex, 1);
+  saveRooms();
+  renderRooms();
+}
+
+function saveRooms(){
+  localStorage.setItem("ecoRooms", JSON.stringify(rooms));
+  renderRecommendation();
+}
+
+function renderRooms(){
+  const container = document.getElementById("rooms");
+  if(!container) return;
+  container.innerHTML = "";
+  
+  rooms.forEach((room, rIdx) => {
+    let html = `<div class="card p-5 room">
+      <div class="flex justify-between items-center mb-3">
+        <h3 class="font-black text-xl text-green-800"><i class="fa-solid fa-door-open mr-2"></i>${room.name}</h3>
+        <button class="btn red text-xs py-1 px-2" onclick="deleteRoom(${rIdx})"><i class="fa-solid fa-trash"></i></button>
+      </div>
+      <div class="flex gap-2 mb-3">
+        <select id="appSelect_${rIdx}">`;
+        
+    Object.keys(APPLIANCE_REFERENCE).forEach(appName => {
+      html += `<option value="${appName}">${appName}</option>`;
+    });
+    
+    html += `</select>
+        <button class="btn blue text-xs py-1 px-3 whitespace-nowrap" onclick="addApplianceToRoom(${rIdx})">${t("addAppliance")}</button>
+      </div>
+      <div class="space-y-2">`;
+      
+    room.appliances.forEach((app, aIdx) => {
+      const badgeClass = app.on ? "badge on" : "badge off";
+      const badgeText = app.on ? t("on") : t("off");
+      html += `<div class="appliance bg-white flex justify-between items-center flex-wrap gap-2">
+        <div>
+          <div class="font-bold">${app.name}</div>
+          <div class="text-xs text-gray-500">${app.power} W</div>
+        </div>
+        <div class="flex items-center gap-2">
+          <span class="${badgeClass}">${badgeText}</span>
+          <button class="btn gray text-xs py-1 px-2" onclick="toggleAppliance(${rIdx}, ${aIdx})">${app.on ? t("turnOff") : t("turnOn")}</button>
+          <button class="btn red text-xs py-1 px-2" onclick="deleteAppliance(${rIdx}, ${aIdx})"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+      </div>`;
+    });
+    
+    html += `</div></div>`;
+    container.innerHTML += html;
+  });
+}
+
+// Profile & Schedule
+function addResidentProfile(data = null){
+  if(!family.residentsList) family.residentsList = [];
+  family.residentsList.push(data || {
+    name: `Resident ${family.residentsList.length + 1}`,
+    wake: "06:30",
+    sleep: "22:30",
+    schoolGoing: "",
+    schoolReturn: "",
+    workGoing: "08:00",
+    workReturn: "17:30"
+  });
+  renderResidentsListDOM();
+}
+
+function removeResidentProfile(index){
+  family.residentsList.splice(index, 1);
+  renderResidentsListDOM();
+}
+
+function renderResidentsListDOM(){
+  const container = document.getElementById("residentsListContainer");
+  if(!container) return;
+  container.innerHTML = "";
+  
+  if(!family.residentsList || family.residentsList.length === 0){
+    container.innerHTML = `<p class="text-sm text-gray-500">No residents added yet.</p>`;
+    return;
+  }
+
+  family.residentsList.forEach((res, idx) => {
+    container.innerHTML += `
+      <div class="p-4 bg-gray-50 rounded-xl border border-gray-200 space-y-3">
+        <div class="flex justify-between items-center">
+          <input type="text" value="${res.name}" class="font-bold bg-white !w-auto" onchange="family.residentsList[${idx}].name = this.value">
+          <button class="btn red text-xs py-1 px-2" onclick="removeResidentProfile(${idx})"><i class="fa-solid fa-trash"></i></button>
+        </div>
+        <div class="grid md:grid-cols-2 gap-3 text-sm">
+          <div><label class="font-bold text-xs">${t("residentWake")}</label><input type="time" value="${res.wake}" class="mt-1" onchange="family.residentsList[${idx}].wake = this.value"></div>
+          <div><label class="font-bold text-xs">${t("residentSleep")}</label><input type="time" value="${res.sleep}" class="mt-1" onchange="family.residentsList[${idx}].sleep = this.value"></div>
+          <div><label class="font-bold text-xs">${t("schoolGoing")}</label><input type="time" value="${res.schoolGoing || ''}" class="mt-1" onchange="family.residentsList[${idx}].schoolGoing = this.value"></div>
+          <div><label class="font-bold text-xs">${t("schoolReturn")}</label><input type="time" value="${res.schoolReturn || ''}" class="mt-1" onchange="family.residentsList[${idx}].schoolReturn = this.value"></div>
+          <div><label class="font-bold text-xs">${t("workGoing")}</label><input type="time" value="${res.workGoing || ''}" class="mt-1" onchange="family.residentsList[${idx}].workGoing = this.value"></div>
+          <div><label class="font-bold text-xs">${t("workReturn")}</label><input type="time" value="${res.workReturn || ''}" class="mt-1" onchange="family.residentsList[${idx}].workReturn = this.value"></div>
+        </div>
+      </div>
+    `;
+  });
+}
+
+function loadFamilyToDOM(){
+  document.getElementById("userName").value = family.name || "";
+  document.getElementById("address").value = family.address || "";
+  document.getElementById("residents").value = family.residents || 4;
+  document.getElementById("holidayDeparture").value = family.holidayDeparture || "";
+  document.getElementById("holidayArrival").value = family.holidayArrival || "";
+  if(!family.residentsList){
+    family.residentsList = [{name: "Resident 1", wake: family.wake || "06:30", sleep: family.sleep || "22:30", schoolGoing: "", schoolReturn: "", workGoing: "08:00", workReturn: "17:30"}];
+  }
+  renderResidentsListDOM();
+}
+
+function saveFamily(){
+  family.name = document.getElementById("userName").value;
+  family.address = document.getElementById("address").value;
+  family.residents = Number(document.getElementById("residents").value);
+  family.holidayDeparture = document.getElementById("holidayDeparture").value;
+  family.holidayArrival = document.getElementById("holidayArrival").value;
+  
+  localStorage.setItem("ecoFamily", JSON.stringify(family));
+  const msg = document.getElementById("familyMsg");
+  msg.textContent = t("saved");
+  setTimeout(() => msg.textContent = "", 3000);
+  renderRecommendation();
+}
+
+// Daily Usage Key-In
+function saveDailyUsage(){
+  const date = document.getElementById("logDate").value;
+  const kwh = Number(document.getElementById("logKwh").value);
+  const msg = document.getElementById("logMsg");
+  
+  if(!date || !kwh){
+    alert("Please enter both date and kWh.");
+    return;
+  }
+  
+  let existing = dailyLogs.find(l => l.date === date);
+  if(existing){
+    existing.kwh = kwh;
+  } else {
+    dailyLogs.push({date, kwh, savingAchievement: 0.0});
+  }
+  
+  // Sort chronologically
+  dailyLogs.sort((a,b) => new Date(a.date) - new Date(b.date));
+  
+  localStorage.setItem("ecoDailyLogs", JSON.stringify(dailyLogs));
+  points += 5;
+  localStorage.setItem("ecoPoints", points);
+  
+  msg.textContent = t("logSavedMsg");
+  document.getElementById("logKwh").value = "";
+  setTimeout(() => msg.textContent = "", 3000);
+  
+  renderAll();
+}
+
+function renderDailyLogs(){
+  const historyContainer = document.getElementById("logHistory");
+  if(!historyContainer) return;
+  historyContainer.innerHTML = "";
+  
+  if(dailyLogs.length === 0){
+    historyContainer.innerHTML = `<p class="text-gray-500">No daily usage entries yet.</p>`;
+    return;
+  }
+  
+  [...dailyLogs].reverse().slice(0, 5).forEach(log => {
+    historyContainer.innerHTML += `<div class="flex justify-between p-2 bg-gray-50 rounded-lg">
+      <span><i class="fa-solid fa-calendar mr-2 text-green-600"></i>${log.date}</span>
+      <span class="font-bold">${log.kwh} kWh <span class="text-xs text-blue-600">(Saved: ${(log.savingAchievement||0).toFixed(2)} kWh)</span></span>
+    </div>`;
+  });
+}
+
+// Monthly Bill Upload
+function saveMonthlyBill(){
+  const month = document.getElementById("billMonth").value;
+  const amount = Number(document.getElementById("billAmount").value);
+  const msg = document.getElementById("billMsg");
+  
+  if(!month || !amount){
+    alert("Please enter billing month and amount.");
+    return;
+  }
+  
+  monthlyBills.push({month, amount});
+  localStorage.setItem("ecoMonthlyBills", JSON.stringify(monthlyBills));
+  
+  msg.textContent = t("billSavedMsg");
+  document.getElementById("billAmount").value = "";
+  document.getElementById("billMonth").value = "";
+  setTimeout(() => msg.textContent = "", 3000);
+  
+  renderBillHistory();
+}
+
+function renderBillHistory(){
+  const historyContainer = document.getElementById("billHistory");
+  if(!historyContainer) return;
+  historyContainer.innerHTML = "";
+  
+  if(monthlyBills.length === 0){
+    historyContainer.innerHTML = `<p class="text-gray-500">No monthly bills uploaded yet.</p>`;
+    return;
+  }
+  
+  monthlyBills.forEach(bill => {
+    historyContainer.innerHTML += `<div class="flex justify-between p-2 bg-gray-50 rounded-lg">
+      <span><i class="fa-solid fa-file-invoice mr-2 text-blue-600"></i>${bill.month}</span>
+      <span class="font-bold">$${bill.amount.toFixed(2)}</span>
+    </div>`;
+  });
+}
+
+// Dashboard Chart Rendering (Usage vs Saving Achievement)
+function renderDashboardChart(){
+  const canvas = document.getElementById("dashboardUsageChart");
+  const emptyMsg = document.getElementById("graphEmptyMessage");
+  if(!canvas) return;
+
+  if(!dailyLogs || dailyLogs.length === 0){
+    canvas.style.display = "none";
+    if(emptyMsg) emptyMsg.classList.remove("hidden");
+    return;
+  }
+
+  canvas.style.display = "block";
+  if(emptyMsg) emptyMsg.classList.add("hidden");
+
+  const sortedLogs = [...dailyLogs].sort((a,b) => new Date(a.date) - new Date(b.date));
+  const labels = sortedLogs.map(l => l.date);
+  const usageData = sortedLogs.map(l => l.kwh);
+  const savingData = sortedLogs.map(l => l.savingAchievement || 0);
+
+  if(dashboardChartInstance){
+    dashboardChartInstance.destroy();
+  }
+
+  const ctx = canvas.getContext("2d");
+  dashboardChartInstance = new Chart(ctx, {
+    type: 'bar',
+    data: {
+      labels: labels,
+      datasets: [
+        {
+          label: 'Daily Usage (kWh)',
+          data: usageData,
+          backgroundColor: 'rgba(37, 99, 235, 0.7)',
+          borderColor: 'rgba(37, 99, 235, 1)',
+          borderWidth: 1,
+          borderRadius: 6
+        },
+        {
+          label: 'Daily Saving Achievement (kWh)',
+          data: savingData,
+          backgroundColor: 'rgba(22, 163, 74, 0.8)',
+          borderColor: 'rgba(22, 163, 74, 1)',
+          borderWidth: 1,
+          borderRadius: 6
+        }
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      scales: {
+        y: {
+          beginAtZero: true,
+          title: { display: true, text: 'kWh' }
+        },
+        x: {
+          title: { display: true, text: 'Date' }
+        }
+      }
+    }
+  });
+}
+
+// AI Eco Coach Chat
+const chatBox = document.getElementById("chatBox");
+function appendChat(sender, text){
+  if(!chatBox) return;
+  const bubble = document.createElement("div");
+  bubble.className = `bubble ${sender === 'ai' ? 'ai' : 'user'}`;
+  bubble.innerHTML = `<strong>${sender === 'ai' ? 'Eco Coach 🤖' : 'You'}:</strong> ${text}`;
+  chatBox.appendChild(bubble);
+  chatBox.scrollTop = chatBox.scrollHeight;
+}
+
+function sendChat(){
+  const input = document.getElementById("chatInput");
+  const txt = input.value.trim();
+  if(!txt) return;
+  appendChat('user', txt);
+  input.value = "";
+  
+  setTimeout(() => {
+    let reply = t("coachDefault");
+    const lower = txt.toLowerCase();
+    if(lower.includes("switch") || lower.includes("off") || lower.includes("save")){
+      if(currentTarget){
+        reply = `Based on your reference table and active devices, consider adjusting your ${currentTarget.name} to reduce consumption.`;
+      } else {
+        reply = "All high-power appliances appear to be off or optimized according to your reference table. Great job!";
+      }
+    } else if(lower.includes("hello") || lower.includes("hi")){
+      reply = t("coachIntro");
+    } else {
+      reply = `According to your reference table, keeping appliances on Eco Mode or standard low settings saves significant electricity daily.`;
+    }
+    appendChat('ai', reply);
+  }, 600);
+}
+
+// DEMO data loader
+function demo(){
+  points = 120;
+  saving = 4.85;
+  actions = 7;
+  dailyLogs = [
+    {date: "2026-09-24", kwh: 14.2, savingAchievement: 1.2},
+    {date: "2026-09-25", kwh: 12.8, savingAchievement: 1.8},
+    {date: "2026-09-26", kwh: 11.5, savingAchievement: 2.1},
+    {date: "2026-09-27", kwh: 10.9, savingAchievement: 2.5}
+  ];
+  monthlyBills = [
+    {month: "2026-08", amount: 142.50}
+  ];
+  rooms = [
+    {name: "Living Room", appliances: [{name: "Air Conditioner 1.0 HP", power: 900, on: true}, {name: "LED Television", power: 100, on: true}]},
+    {name: "Kitchen", appliances: [{name: "Refrigerator", power: 150, on: true}, {name: "Rice Cooker", power: 700, on: false}]},
+    {name: "Bedroom 1", appliances: [{name: "Standing Fan", power: 50, on: true}, {name: "LED Light", power: 10, on: true}]}
+  ];
+  family = {
+    name: "Ahmad Family",
+    address: "No. 12, Jalan Eco, Ipoh",
+    residents: 4,
+    wake: "06:30",
+    sleep: "22:30",
+    homeFrom: "17:00",
+    homeUntil: "22:00",
+    residentsList: [
+      {name: "Father", wake: "06:00", sleep: "23:00", schoolGoing: "", schoolReturn: "", workGoing: "08:00", workReturn: "18:00"},
+      {name: "Child 1", wake: "06:30", sleep: "21:30", schoolGoing: "07:00", schoolReturn: "14:00", workGoing: "", workReturn: ""}
+    ],
+    holidayDeparture: "",
+    holidayArrival: ""
+  };
+  
+  localStorage.setItem("ecoPoints", points);
+  localStorage.setItem("ecoSaving", saving);
+  localStorage.setItem("ecoActions", actions);
+  localStorage.setItem("ecoDailyLogs", JSON.stringify(dailyLogs));
+  localStorage.setItem("ecoMonthlyBills", JSON.stringify(monthlyBills));
+  localStorage.setItem("ecoRooms", JSON.stringify(rooms));
+  localStorage.setItem("ecoFamily", JSON.stringify(family));
+  
+  loadFamilyToDOM();
+  renderAll();
+  alert(t("demoModel") || t("demoMsg"));
+}
+
+window.addEventListener("DOMContentLoaded", initApp);
+</script>
+</body>
+</html>
